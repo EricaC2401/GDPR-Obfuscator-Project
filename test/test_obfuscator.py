@@ -31,3 +31,19 @@ class TestCsv:
         assert df_obfuscated['student_id'].iloc[0] == 1234
         assert 'graduation_date' in df_obfuscated.columns
         assert df_obfuscated['graduation_date'].iloc[0] == '2024-03-31'
+    
+
+class TestException:
+    @pytest.mark.it('Test ValueError when an unsupported type is inputed')
+    def test_obfuscate_file_unsupported_file_type(self, test_data):
+        test_content, test_fields = test_data
+        with pytest.raises(ValueError):
+            obfuscate_file(test_content, test_fields, 'xlsx')
+    
+    @pytest.mark.it('Test KeyError when a field in the fields_list is not in the data')
+    def test_obfuscate_file_unrelated_field(self, test_data):
+        test_content = test_data[0]
+        test_fields = ['name', 'cohort']
+        with pytest.raises(KeyError):
+            obfuscate_file(test_content, test_fields, 'csv')
+

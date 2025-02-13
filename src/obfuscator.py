@@ -17,11 +17,21 @@ def obfuscate_file(
         io.BytesIO: Obfuscated file (as specified in file_type,
         csv by default) as a byte system
     '''
-    df_step = pd.read_csv(io.StringIO(file_content))
+    try:
+        if file_type == 'csv':
+            df_step = pd.read_csv(io.StringIO(file_content))
+        else:
+            raise ValueError(f"Sorry that {file_type} is not supported.")
+    except ValueError as ve:
+        raise ValueError(f"Error reading the file: {str(ve)}")
+    except Exception as e:
+        raise Exception(f"Unexpected error: {str(e)}")
 
     for field in fields_list:
         if field in df_step.columns:
             df_step[field] = '***'
+        else:
+            raise KeyError(f"Field '{field}' not found in the data.")
 
     output = io.BytesIO()
     if file_type == 'csv':
