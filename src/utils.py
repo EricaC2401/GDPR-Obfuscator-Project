@@ -80,11 +80,19 @@ def json_input_handler(json_input: str) -> tuple[str, str, list]:
     Returns:
         tuple[str,str,list]: S3 Bucket Name, S3 Key Name, ppi_fields
     '''
-    json_dict = json.loads(json_input)
 
-    s3_url = json_dict['file_to_obfuscate']
-    s3_bucket, file_key = s3_url.replace('s3://', '').split('/', 1)
+    try:
+        json_dict = json.loads(json_input)
 
-    fields_list = json_dict['pii_fields']
+        s3_url = json_dict['file_to_obfuscate']
+        s3_bucket, file_key = s3_url.replace('s3://', '').split('/', 1)
 
-    return (s3_bucket, file_key, fields_list)
+        fields_list = json_dict['pii_fields']
+
+        return (s3_bucket, file_key, fields_list)
+    except TypeError as te:
+        raise TypeError("The input is not a JSON string")
+    except json.JSONDecodeError as je:
+        raise ValueError("Invalid JSON input")
+    except Exception as e:
+        raise Exception('Unexpected error: {e}')

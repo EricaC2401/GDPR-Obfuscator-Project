@@ -150,3 +150,13 @@ class TestJsonHandler:
         assert result[0] == "my_ingestion_bucket"
         assert result[1] == "new_data/file1.csv"
         assert result[2] == ["name", "email_address"]
+    
+    @pytest.mark.it('Test TypeError when an non-json string is given')
+    def test_non_json_string(self):
+        json_dict = {
+                        "file_to_obfuscate": "s3://my_ingestion_bucket" +
+                                             "/new_data/file1.csv",
+                        "pii_fields": ["name", "email_address"]
+                    }
+        with pytest.raises(TypeError):
+            json_input_handler(json_dict)
