@@ -1,11 +1,12 @@
 import boto3
 import io
+import json
 
 
 def read_s3_file(s3_bucket: str, file_key: str) -> tuple[str, str]:
     '''
     Load and read a file from the specified s3_bucket
-    and returns its content as a tuple of str
+    and returns its content and file type as a tuple of str
 
     Args:
         s3_bucket (str): name of the s3_bucket where the file is stored
@@ -65,3 +66,25 @@ def write_s3_file(s3_bucket: str, file_key: str, file_content: io.BytesIO):
         raise ve
     except Exception as e:
         raise Exception(f'Unexpected Error: {e}')
+
+
+def json_input_handler(json_input: str) -> tuple[str, str, list]:
+    '''
+    Handle the JSON input containing s3_url and pii_fields
+
+    Args:
+        json_input (str): A json string contraining 2 pairs -
+        "file_to_obfuscate" as a str and
+        "pii_fields" as a list
+
+    Returns:
+        tuple[str,str,list]: S3 Bucket Name, S3 Key Name, ppi_fields
+    '''
+    json_dict = json.loads(json_input)
+
+    s3_url = json_dict['file_to_obfuscate']
+    s3_bucket, file_key = s3_url.replace('s3://', '').split('/', 1)
+
+    fields_list = json_dict['pii_fields']
+
+    return (s3_bucket, file_key, fields_list)

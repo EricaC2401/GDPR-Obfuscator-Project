@@ -1,10 +1,11 @@
 import pytest
-from src.s3_handler import read_s3_file, write_s3_file
+from src.utils import read_s3_file, write_s3_file, json_input_handler
 import boto3
 from moto import mock_aws
 import os
 import io
 import pandas as pd
+import json
 
 
 @pytest.fixture()
@@ -119,3 +120,33 @@ class TestWriteCsv:
             write_s3_file(
                 'test_bucket', 'test_output_file.xlsx',
                 test_output_file_content)
+
+
+class TestJsonHandler:
+    @pytest.mark.it('Test if return the correct type of output')
+    def test_correct_output_type(self):
+        json_dict = {
+                        "file_to_obfuscate": "s3://my_ingestion_bucket" +
+                                             "/new_data/file1.csv",
+                        "pii_fields": ["name", "email_address"]
+                    }
+        json_string = json.dumps(json_dict)
+        result = json_input_handler(json_string)
+        assert isinstance(result, tuple)
+        assert isinstance(result[0],str)
+        assert isinstance(result[1],str)
+        assert isinstance(result[2],list)
+
+    @pytest.mark.it('Test if return the correct content of output')
+    def test_correct_output_content(self):
+        json_dict = {
+                        "file_to_obfuscate": "s3://my_ingestion_bucket" +
+                                             "/new_data/file1.csv",
+                        "pii_fields": ["name", "email_address"]
+                    }
+        json_string = json.dumps(json_dict)
+        result = json_input_handler(json_string)
+        assert len(result) == 3
+        assert result[0] == "my_ingestion_bucket"
+        assert result[1] == "new_data/file1.csv"
+        assert result[2] == ["name", "email_address"]
