@@ -13,7 +13,7 @@ def obfuscate_file(
         fields_list (list): fields to be obfuscated
         file_type (str): file type (e.g. csv) in the output byte system
 
-    Output:
+    Returns:
         io.BytesIO: Obfuscated file (as specified in file_type,
         csv by default) as a byte system
     '''
