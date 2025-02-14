@@ -22,13 +22,15 @@ def obfuscate_file(
     try:
         output = io.BytesIO()
         if file_type == 'csv':
-            chunk_iter = pd.read_csv(io.StringIO(file_content), chunksize=chunk_size)
+            chunk_iter = pd.read_csv(io.StringIO(file_content),
+                                     chunksize=chunk_size)
             for chunk in chunk_iter:
                 for field in fields_list:
                     if field in chunk.columns:
                         chunk[field] = '***'
                     else:
-                        raise KeyError(f"Field '{field}' not found in the data.")
+                        raise KeyError(f"Field '{field}' not" +
+                                       "found in the data.")
                 chunk.to_csv(output, index=False, header=output.tell() == 0)
         else:
             raise ValueError(f"Sorry that {file_type} is not supported.")
@@ -38,6 +40,6 @@ def obfuscate_file(
         raise ValueError(f"Error reading the file: {str(ve)}")
     except Exception as e:
         raise Exception(f"Unexpected error: {str(e)}")
-    
+
     output.seek(0)
     return output
