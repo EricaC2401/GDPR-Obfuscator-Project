@@ -24,7 +24,7 @@ def read_s3_file(s3_bucket: str, file_key: str) -> tuple[str, str]:
     content = obj['Body'].read()
 
     try:
-        if file_extension == 'csv':
+        if file_extension in ['csv', 'json']:
             content_str = content.decode('utf8')
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
@@ -51,7 +51,7 @@ def write_s3_file(s3_bucket: str, file_key: str, file_content: io.BytesIO):
     file_extension = file_key.split(".")[-1].lower()
 
     try:
-        if file_extension == 'csv':
+        if file_extension in ['csv','json']:
             body_content = file_content.getvalue().decode('utf8')
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
@@ -63,7 +63,7 @@ def write_s3_file(s3_bucket: str, file_key: str, file_content: io.BytesIO):
         return (f"{file_key} has been successfully "
                 f"uploaded to s3 bucket {s3_bucket}")
     except ValueError as ve:
-        raise ve
+        raise ValueError(f'ValueError: {ve}')
     except Exception as e:
         raise Exception(f'Unexpected Error: {e}')
 
@@ -95,4 +95,4 @@ def json_input_handler(json_input: str) -> tuple[str, str, list]:
     except json.JSONDecodeError as je:
         raise ValueError("Invalid JSON input")
     except Exception as e:
-        raise Exception('Unexpected error: {e}')
+        raise Exception(f'Unexpected error: {e}')
