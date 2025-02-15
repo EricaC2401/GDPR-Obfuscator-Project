@@ -24,4 +24,4 @@ def read_obfuscate_write_s3(json_string: str):
 
         return 'Obfuscated file saved to s3://{s3_bucket}/{output_file_key}'
     except Exception as e:
-        raise Exception({e})
+        raise Exception(str(e))
