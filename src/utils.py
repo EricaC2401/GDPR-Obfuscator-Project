@@ -1,6 +1,7 @@
 import boto3
 import io
 import json
+import pyarrow.parquet as pq
 
 
 def read_s3_file(s3_bucket: str, file_key: str) -> tuple[str, str]:
@@ -26,13 +27,16 @@ def read_s3_file(s3_bucket: str, file_key: str) -> tuple[str, str]:
     try:
         if file_extension in ['csv', 'json']:
             content_str = content.decode('utf8')
+        elif file_extension == 'parquet':
+            table = pq.read_table(io.BytesIO(content))
+            content_str = table.to_pandas().to_csv(index=False)
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
         return (content_str, file_extension)
     except ValueError as ve:
         raise ve
     except Exception as e:
-        raise Exception(f'Unexpected Error: {e}')
+        raise Exception(f'Unexpected Error: {str(e)}')
 
 
 def write_s3_file(s3_bucket: str, file_key: str, file_content: io.BytesIO):
@@ -51,21 +55,25 @@ def write_s3_file(s3_bucket: str, file_key: str, file_content: io.BytesIO):
     file_extension = file_key.split(".")[-1].lower()
 
     try:
-        if file_extension in ['csv','json']:
+        if file_extension in ['csv', 'json']:
             body_content = file_content.getvalue().decode('utf8')
+        elif file_extension == 'parquet':
+            body_content = file_content.getvalue()
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
+
         s3_client.put_object(
                 Bucket=s3_bucket,
                 Key=file_key,
                 Body=body_content
             )
+
         return (f"{file_key} has been successfully "
                 f"uploaded to s3 bucket {s3_bucket}")
     except ValueError as ve:
-        raise ValueError(f'ValueError: {ve}')
+        raise ValueError(f'ValueError: {str(ve)}')
     except Exception as e:
-        raise Exception(f'Unexpected Error: {e}')
+        raise Exception(f'Unexpected Error: {str(e)}')
 
 
 def json_input_handler(json_input: str) -> tuple[str, str, list]:
@@ -84,15 +92,21 @@ def json_input_handler(json_input: str) -> tuple[str, str, list]:
     try:
         json_dict = json.loads(json_input)
 
+        if 'file_to_obfuscate' not in json_dict or \
+                'pii_fields' not in json_dict:
+            raise ValueError("Missing required keys in JSON input")
+
         s3_url = json_dict['file_to_obfuscate']
         s3_bucket, file_key = s3_url.replace('s3://', '').split('/', 1)
 
         fields_list = json_dict['pii_fields']
 
         return (s3_bucket, file_key, fields_list)
-    except TypeError as te:
+    except TypeError:
         raise TypeError("The input is not a JSON string")
-    except json.JSONDecodeError as je:
+    except json.JSONDecodeError:
+        raise ValueError("Invalid JSON input")
+    except ValueError:
         raise ValueError("Invalid JSON input")
     except Exception as e:
-        raise Exception(f'Unexpected error: {e}')
+        raise Exception(f'Unexpected error: {str(e)}')

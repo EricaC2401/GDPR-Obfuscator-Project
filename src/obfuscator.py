@@ -2,6 +2,7 @@ import pandas as pd
 import io
 import ijson
 from typing import Literal
+import pyarrow.parquet as pq
 
 
 def obfuscate_fields_in_df(
@@ -30,7 +31,7 @@ def process_df_chunk(
         output: io.BytesIO, is_first_chunk: bool
         ):
     '''
-    Process a chunk of CSV data, obfuscating the specified fields
+    Process df, obfuscating the specified fields
 
     Args:
         chunk (pd.DataFrame): DataFrame chunk of the CSV file
@@ -47,19 +48,18 @@ def process_json_chunk(
         output: io.BytesIO, chunk_size: int
         ):
     '''
-    Process a chunk of CSV data, obfuscating the specified fields
+    Process JSON data in chunk, obfuscating the specified fields
 
     Args:
         file_content (str): raw data as a string
         fields_list (list): fields to be obfuscated
         output (io.BytesIO): Byte system to write the output
         chunk_size (int): number of rows to process at a time, 5000 by default
-        is_first_chunk (bool): Whether this is the first chunk
 
     Returns:
         bool (False): Update flag for header writing on subsequent chunks
     '''
-    json_objects = ijson.items(io.BytesIO(file_content.encode('utf8')), 'item')
+    json_objects = ijson.items(file_content.encode('utf8'), 'item')
     chunk = []
     is_first_chunk = True
     for obj in json_objects:
@@ -72,6 +72,31 @@ def process_json_chunk(
     if chunk:
         step_df = pd.DataFrame(chunk)
         process_df_chunk(step_df, fields_list, output, is_first_chunk)
+
+
+def process_parquet_chunk(
+        file_content: str, fields_list: list[str],
+        output: io.BytesIO, chunk_size: int
+        ):
+    '''
+    Process a parquet data in chunk, obfuscating the specified fields
+
+    Args:
+        file_content (str): raw data as a string
+        fields_list (list): fields to be obfuscated
+        output (io.BytesIO): Byte system to write the output
+        chunk_size (int): number of rows to process at a time, 5000 by default
+
+    Returns:
+        bool (False): Update flag for header writing on subsequent chunks
+    '''
+    parquet_file = pq.ParquetFile(file_content)
+    is_first_chunk = True
+
+    for batch in parquet_file.iter_batches(batch_size=chunk_size):
+        chunk_df = batch.to_pandas()
+        process_df_chunk(chunk_df, fields_list, output, is_first_chunk)
+        is_first_chunk = False
 
 
 def convert_str_file_content_to_obfuscated_csv(
@@ -102,8 +127,10 @@ def convert_str_file_content_to_obfuscated_csv(
         for chunk in chunk_iter:
             process_df_chunk(chunk, fields_list, output, is_first_chunk)
             is_first_chunk = False
-    if file_type == 'json':
+    elif file_type == 'json':
         process_json_chunk(file_content, fields_list, output, chunk_size)
+    elif file_type == 'parquet':
+        process_parquet_chunk(file_content, fields_list, output, chunk_size)
 
     output.seek(0)
     return output

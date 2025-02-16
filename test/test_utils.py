@@ -6,6 +6,8 @@ import os
 import io
 import pandas as pd
 import json
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 
 @pytest.fixture()
@@ -81,6 +83,18 @@ def s3_client(aws_credentials, json_data):
             Key='test_file.json',
             Body=json_data
         )
+        json_data.seek(0)
+        json_dict = json.load(json_data)
+        df = pd.DataFrame(json_dict['data'])
+        parquet_buffer = io.BytesIO()
+        df.to_parquet(parquet_buffer, engine="pyarrow")
+        parquet_buffer.seek(0)
+        s3_client.put_object(
+            Bucket='test_bucket',
+            Key='test_file.parquet',
+            Body=parquet_buffer.getvalue()
+        )
+
         yield boto3.client('s3')
 
 
@@ -93,6 +107,37 @@ def test_csv_output_file_content():
                 "5678,***,DE,2024-06-31," + \
                 "***\n"
     return io.BytesIO(content.encode('utf8'))
+
+
+@pytest.fixture
+def test_json_output_file_content():
+    content = [
+                {"student_id": "1234", "name": "John Smith",
+                    "course": "Software", "graduation_date": "2024-03-31",
+                    "email_address": "j.smith@email.com"},
+                {"student_id": "5678", "name": "Steve Lee",
+                    "course": "DE", "graduation_date": "2024-06-31",
+                    "email_address": "sl123@email.com"}
+              ]
+    return io.BytesIO(json.dumps(content).encode('utf8'))
+
+
+@pytest.fixture
+def test_parquet_output_file_content():
+    content = [
+                {"student_id": "1234", "name": "John Smith",
+                    "course": "Software", "graduation_date": "2024-03-31",
+                    "email_address": "j.smith@email.com"},
+                {"student_id": "5678", "name": "Steve Lee",
+                    "course": "DE", "graduation_date": "2024-06-31",
+                    "email_address": "sl123@email.com"}
+              ]
+    df = pd.DataFrame(content)
+    table = pa.Table.from_pandas(df)
+    parquet_buffer = io.BytesIO()
+    pq.write_table(table, parquet_buffer)
+    parquet_buffer.seek(0)
+    return parquet_buffer
 
 
 class TestReadCsv:
@@ -151,6 +196,31 @@ class TestReadJson:
         assert result[1] == 'json'
 
 
+class TestReadParquet:
+    @pytest.mark.it('Test if the output type is tuple[str, str]')
+    def test_output_type_correct(self, s3_client):
+        result = read_s3_file('test_bucket', 'test_file.parquet')
+        assert isinstance(result, tuple)
+        assert isinstance(result[0], str)
+        assert isinstance(result[1], str)
+
+    @pytest.mark.it('Test if the output has correct content_str')
+    def test_output_content_file_content_str_correct(self, s3_client):
+        result = read_s3_file('test_bucket', 'test_file.parquet')
+        df_test = pd.read_csv(io.StringIO(result[0]))
+        assert df_test.shape == (2, 5)
+        assert df_test.iloc[0]['student_id'] == 1234
+        assert df_test.iloc[0]['name'] == 'John Smith'
+        assert df_test.iloc[0]['course'] == 'Software'
+        assert df_test.iloc[0]['graduation_date'] == '2024-03-31'
+        assert df_test.iloc[0]['email_address'] == 'j.smith@email.com'
+
+    @pytest.mark.it('Test if the output has correct file_extension')
+    def test_output_content_file_extension_correct(self, s3_client):
+        result = read_s3_file('test_bucket', 'test_file.parquet')
+        assert result[1] == 'parquet'
+
+
 class TestWriteCsv:
     @pytest.mark.it('Test if the correct message would be ' +
                     'return when the file is successfully uploaded')
@@ -194,42 +264,74 @@ class TestWriteJson:
     @pytest.mark.it('Test if the correct message would be ' +
                     'return when the file is successfully uploaded')
     def test_correct_message_returned_when_successful(
-            self, s3_client, test_csv_output_file_content):
+            self, s3_client, test_json_output_file_content):
         message = write_s3_file(
             'test_bucket', 'test_output_file.json',
-            test_csv_output_file_content)
+            test_json_output_file_content)
         assert message == "test_output_file.json has been "\
             "successfully uploaded to s3 bucket test_bucket"
 
     @pytest.mark.it('Test if the correct content is uploaded')
     def test_correct_content_is_uploaded(
-            self, s3_client, test_csv_output_file_content, json_data):
-        test_file_content = {
-                                "data": [
-                                    {
-                                        "student_id": "1234",
-                                        "name": "John Smith",
-                                        "course": "Software",
-                                        "graduation_date": "2024-03-31",
-                                        "email_address": "j.smith@email.com"
-                                    },
-                                    {
-                                        "student_id": "5678",
-                                        "name": "Steve Lee",
-                                        "course": "DE",
-                                        "graduation_date": "2024-06-31",
-                                        "email_address": "sl123@email.com"
-                                    }
-                                ]
-                                }
+            self, s3_client, test_json_output_file_content):
+        test_file_content = [
+                                {"student_id": "1234", "name": "John Smith",
+                                    "course": "Software",
+                                    "graduation_date": "2024-03-31",
+                                    "email_address": "j.smith@email.com"},
+                                {"student_id": "5678", "name": "Steve Lee",
+                                    "course": "DE",
+                                    "graduation_date": "2024-06-31",
+                                    "email_address": "sl123@email.com"}
+                            ]
         write_s3_file(
-            'test_bucket', 'test_output_file.json', json_data)
+            'test_bucket', 'test_output_file.json',
+            test_json_output_file_content)
 
         response = s3_client.get_object(Bucket='test_bucket',
                                         Key='test_output_file.json')
 
         retrieved_content = response['Body'].read().decode('utf8')
         assert json.loads(retrieved_content) == test_file_content
+
+
+class TestWriteParquet:
+    @pytest.mark.it('Test if the correct message would be ' +
+                    'return when the file is successfully uploaded')
+    def test_correct_message_returned_when_successful(
+            self, s3_client, test_parquet_output_file_content):
+        message = write_s3_file(
+            'test_bucket', 'test_output_file.parquet',
+            test_parquet_output_file_content)
+        assert message == "test_output_file.parquet has been "\
+            "successfully uploaded to s3 bucket test_bucket"
+
+    @pytest.mark.it('Test if the correct content is uploaded')
+    def test_correct_content_is_uploaded(
+            self, s3_client, test_parquet_output_file_content):
+        test_file_content = [
+                                {"student_id": "1234", "name": "John Smith",
+                                    "course": "Software",
+                                    "graduation_date": "2024-03-31",
+                                    "email_address": "j.smith@email.com"},
+                                {"student_id": "5678", "name": "Steve Lee",
+                                    "course": "DE",
+                                    "graduation_date": "2024-06-31",
+                                    "email_address": "sl123@email.com"}
+                            ]
+        write_s3_file(
+            'test_bucket', 'test_output_file.parquet',
+            test_parquet_output_file_content)
+
+        response = s3_client.get_object(Bucket='test_bucket',
+                                        Key='test_output_file.parquet')
+
+        retrieved_content = response['Body'].read()
+        parquet_buffer = io.BytesIO(retrieved_content)
+        table = pq.read_table(parquet_buffer)
+        df = table.to_pandas()
+        expected_df = pd.DataFrame(test_file_content)
+        pd.testing.assert_frame_equal(df, expected_df)
 
 
 class TestJsonHandler:
@@ -248,6 +350,17 @@ class TestJsonHandler:
         assert result[0] == "my_ingestion_bucket"
         assert result[1] == "new_data/file1.csv"
         assert result[2] == ["name", "email_address"]
+
+    @pytest.mark.it('Test ValueError when missing required keys')
+    def test_missing_required_keys(self):
+        json_dict = {
+                        "file": "s3://my_ingestion_bucket" +
+                                "/new_data/file1.csv",
+                        "pii": ["name", "email_address"]
+                    }
+        json_string = json.dumps(json_dict)
+        with pytest.raises(ValueError):
+            json_input_handler(json_string)
 
     @pytest.mark.it('Test TypeError when an non-json string is given')
     def test_non_json_string(self):

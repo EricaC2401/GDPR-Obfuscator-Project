@@ -1,6 +1,6 @@
 import pytest
 from src.obfuscator import obfuscate_fields_in_df, obfuscate_file, \
-    process_df_chunk, process_json_chunk, \
+    process_df_chunk, process_json_chunk, process_parquet_chunk, \
     convert_str_file_content_to_obfuscated_csv, \
     convert_csv_to_output_format
 import pandas as pd
@@ -8,6 +8,7 @@ import json
 import io
 from unittest.mock import patch
 import pyarrow.parquet as pq
+import pyarrow as pa
 
 
 @pytest.fixture
@@ -35,6 +36,27 @@ def test_json_data():
 
     fields = ['name', 'email_address']
     return json_content, fields
+
+
+@pytest.fixture
+def test_parquet_data():
+    content = [
+                {"student_id": "1234", "name": "John Smith",
+                    "course": "Software", "graduation_date": "2024-03-31",
+                    "email_address": "j.smith@email.com"},
+                {"student_id": "5678", "name": "Steve Lee",
+                    "course": "DE", "graduation_date": "2024-06-31",
+                    "email_address": "sl123@email.com"}
+              ]
+
+    df = pd.DataFrame(content)
+    table = pa.Table.from_pandas(df)
+    parquet_buffer = io.BytesIO()
+    pq.write_table(table, parquet_buffer)
+    parquet_buffer.seek(0)
+
+    fields = ['name', 'email_address']
+    return parquet_buffer, fields
 
 
 class TestObfuscateFieldsInDf:
@@ -145,6 +167,47 @@ class TestProcessJSONChunk:
         assert df.shape == (2, 5)
 
 
+class TestProcessPARQUETChunk:
+    @pytest.mark.it('Test if process_df_chunk is called in the function')
+    @patch('src.obfuscator.process_df_chunk')
+    def test_obfuscate_fields_is_called(
+            self, mock_process_df_chunk, test_parquet_data):
+        test_content, test_fields = test_parquet_data
+        output_buffer = io.BytesIO()
+        process_parquet_chunk(test_content, test_fields, output_buffer, 1)
+        assert mock_process_df_chunk.call_count == 2
+
+    @pytest.mark.it('Test if the output is a valid csv')
+    def test_output_is_valid_csv(self, test_parquet_data):
+        test_content, test_fields = test_parquet_data
+        output_buffer = io.BytesIO()
+        process_parquet_chunk(test_content, test_fields, output_buffer, 2)
+        output_buffer.seek(0)
+        csv_content = output_buffer.getvalue().decode('utf8')
+        assert ',' in csv_content
+        assert '\n' in csv_content
+        try:
+            df = pd.read_csv(output_buffer)
+        except Exception:
+            pytest.fail("Output is not a valid CSV")
+        assert not df.empty
+        assert 'name' in df.columns
+        assert 'email_address' in df.columns
+        assert df.shape == (2, 5)
+
+    @pytest.mark.it('Test if it works for multiple chunks')
+    def test_works_for_multiple_chunks(self, test_parquet_data):
+        test_content, test_fields = test_parquet_data
+        output_buffer = io.BytesIO()
+        process_parquet_chunk(test_content, test_fields, output_buffer, 2)
+        output_buffer.seek(0)
+        df = pd.read_csv(output_buffer)
+        assert not df.empty
+        assert 'name' in df.columns
+        assert 'email_address' in df.columns
+        assert df.shape == (2, 5)
+
+
 class TestConvertStrFileToCSV:
     @pytest.mark.it('Test process_df_chunk is called when file_type is csv')
     @patch('src.obfuscator.process_df_chunk')
@@ -166,6 +229,18 @@ class TestConvertStrFileToCSV:
                                                             'json')
         assert isinstance(output, io.BytesIO)
         assert mock_process_json_chunk.called
+
+    @pytest.mark.it('Test process_parquet_chunk is called when ' +
+                    'file_type is parquet')
+    @patch('src.obfuscator.process_parquet_chunk')
+    def test_process_parquet_called(
+            self, mock_process_parquet_chunk, test_parquet_data):
+        test_content, test_fields = test_parquet_data
+        output = convert_str_file_content_to_obfuscated_csv(test_content,
+                                                            test_fields,
+                                                            'parquet')
+        assert isinstance(output, io.BytesIO)
+        assert mock_process_parquet_chunk.called
 
     @pytest.mark.it("Ensures output is in CSV format")
     def test_output_is_valid_csv(self, test_csv_data):
