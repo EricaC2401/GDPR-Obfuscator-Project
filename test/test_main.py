@@ -42,7 +42,7 @@ def s3_client(aws_credentials):
 
 
 @pytest.fixture
-def test_output_file_content():
+def test_csv_output_file_content():
     content = "student_id,name,course,graduation_date," + \
                 "email_address\n" + \
                 "1234,***,Software,2024-03-31," + \
@@ -56,7 +56,7 @@ class TestROW:
     @pytest.mark.it('Test if read_obfuscate_write_s3 correctly' +
                     'invoke the inner functions')
     def test_correctly_invoke_inner_functions(
-            self, s3_client, test_output_file_content):
+            self, s3_client, test_csv_output_file_content):
         test_file_content = "student_id,name,course,graduation_date,"\
                             "email_address\n"\
                             "1234,John Smith,Software,2024-03-31,"\
@@ -68,7 +68,8 @@ class TestROW:
                    return_value=(test_file_content,
                                  test_file_type)) as mock_read, \
             patch('src.main.obfuscate_file',
-                  return_value=test_output_file_content) as mock_obfuscate, \
+                  return_value=test_csv_output_file_content)\
+            as mock_obfuscate, \
                 patch('src.main.write_s3_file') as mock_write:
             json_dict = {
                         "file_to_obfuscate": "s3://test_bucket" +
@@ -85,4 +86,4 @@ class TestROW:
                                                    test_file_type)
             mock_write.assert_called_once_with('test_bucket',
                                                'processed_data/test_file.csv',
-                                               test_output_file_content)
+                                               test_csv_output_file_content)
