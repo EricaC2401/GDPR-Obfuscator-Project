@@ -83,7 +83,7 @@ class TestROW:
                                               'new_data/test_file.csv')
             mock_obfuscate.assert_called_once_with(test_file_content,
                                                    ["name", "email_address"],
-                                                   test_file_type)
+                                                   test_file_type, chunk_size=5000)
             mock_write.assert_called_once_with('test_bucket',
                                                'processed_data/test_file.csv',
                                                test_csv_output_file_content)
