@@ -3,7 +3,7 @@ from moto import mock_aws
 import pytest
 from unittest.mock import patch
 import os
-from src.main import read_obfuscate_write_s3
+from src.main import handle_file_obfuscation
 import json
 import io
 
@@ -35,7 +35,7 @@ def s3_client(aws_credentials):
                             "sl123@email.com\n"
         s3_client.put_object(
             Bucket='test_bucket',
-            Key='test_file.csv',
+            Key='new_data/test_file.csv',
             Body=io.BytesIO(test_file_content.encode('utf8'))
         )
         yield boto3.client('s3')
@@ -53,7 +53,7 @@ def test_csv_output_file_content():
 
 
 class TestROW:
-    @pytest.mark.it('Test if read_obfuscate_write_s3 correctly' +
+    @pytest.mark.it('Test if handle_file_obfuscation correctly' +
                     'invoke the inner functions')
     def test_correctly_invoke_inner_functions(
             self, s3_client, test_csv_output_file_content):
@@ -77,13 +77,27 @@ class TestROW:
                         "pii_fields": ["name", "email_address"]
                     }
             json_str = json.dumps(json_dict)
-            read_obfuscate_write_s3(json_str)
+            handle_file_obfuscation(json_str)
 
             mock_read.assert_called_once_with('test_bucket',
                                               'new_data/test_file.csv')
             mock_obfuscate.assert_called_once_with(test_file_content,
                                                    ["name", "email_address"],
-                                                   test_file_type, chunk_size=5000)
+                                                   test_file_type,
+                                                   chunk_size=5000)
             mock_write.assert_called_once_with('test_bucket',
                                                'processed_data/test_file.csv',
                                                test_csv_output_file_content)
+
+    @pytest.mark.it('Test if handle_file_obfuscation return BytesIO when ' +
+                    'if_save_to_s3 is not True')
+    def test_return_ByesIO(self, s3_client):
+        json_dict = {
+                        "file_to_obfuscate": "s3://test_bucket" +
+                                             "/new_data/test_file.csv",
+                        "pii_fields": ["name", "email_address"]
+                    }
+        json_str = json.dumps(json_dict)
+        result = handle_file_obfuscation(json_str, if_save_to_s3=False)
+
+        assert isinstance(result, io.BytesIO)
