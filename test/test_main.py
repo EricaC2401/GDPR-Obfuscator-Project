@@ -108,7 +108,7 @@ class TestHFO:
         json_dict = {
                         "file_to_obfuscate": "s3://test_bucket" +
                                              "/new_data/test_file.csv",
-                        "pii_fields": None
+                        "pii_fields": []
                     }
         json_str = json.dumps(json_dict)
         result = handle_file_obfuscation(json_str,

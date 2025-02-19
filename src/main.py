@@ -1,6 +1,6 @@
 from src.obfuscator import obfuscate_file
 from src.utils import read_s3_file, write_s3_file, json_input_handler
-from src.ppi_detection import detect_if_pii
+from src.pii_detection import detect_if_pii
 from typing import Literal
 import pandas as pd
 import io
