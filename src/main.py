@@ -1,6 +1,9 @@
 from src.obfuscator import obfuscate_file
 from src.utils import read_s3_file, write_s3_file, json_input_handler
+from src.ppi_detection import detect_if_pii
 from typing import Literal
+import pandas as pd
+import io
 
 
 def handle_file_obfuscation(
@@ -8,7 +11,8 @@ def handle_file_obfuscation(
         if_output_different_format: bool = False,
         output_format: Literal['csv', 'json', 'parquet', None] = None,
         chunk_size: int = 5000,
-        if_save_to_s3: bool = True):
+        if_save_to_s3: bool = True,
+        auto_detect_pii: bool = False):
     '''
     Process the file obfuscation
 
@@ -30,11 +34,20 @@ def handle_file_obfuscation(
         if_save_to_s3 (bool): If True, save the obfuscated file to S3.
                               Otherwise, return the byte-stream object
                               instead of saving to S3.
+
+        auto_detect_pii (bool):
+            If True, automatically detect PII fields in the dataset.
+            If False, use the fields list from the JSON string.
     '''
     try:
         s3_bucket, file_key, fields_list = json_input_handler(json_string)
 
         content_str, file_extension = read_s3_file(s3_bucket, file_key)
+
+        if auto_detect_pii:
+            df_step = pd.read_csv(io.StringIO(content_str))
+            fields_list = [col_name for col_name in
+                           df_step.columns if detect_if_pii(col_name)]
 
         if if_output_different_format:
             content_BytesIO = obfuscate_file(

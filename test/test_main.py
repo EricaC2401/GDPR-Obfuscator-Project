@@ -6,6 +6,7 @@ import os
 from src.main import handle_file_obfuscation
 import json
 import io
+import pandas as pd
 
 
 @pytest.fixture()
@@ -52,7 +53,7 @@ def test_csv_output_file_content():
     return io.BytesIO(content.encode('utf8'))
 
 
-class TestROW:
+class TestHFO:
     @pytest.mark.it('Test if handle_file_obfuscation correctly' +
                     'invoke the inner functions')
     def test_correctly_invoke_inner_functions(
@@ -101,3 +102,19 @@ class TestROW:
         result = handle_file_obfuscation(json_str, if_save_to_s3=False)
 
         assert isinstance(result, io.BytesIO)
+
+    @pytest.mark.it('Test when auto_detect_pii is True')
+    def test_auto_detect_pii(self, s3_client):
+        json_dict = {
+                        "file_to_obfuscate": "s3://test_bucket" +
+                                             "/new_data/test_file.csv",
+                        "pii_fields": None
+                    }
+        json_str = json.dumps(json_dict)
+        result = handle_file_obfuscation(json_str,
+                                         if_save_to_s3=False,
+                                         auto_detect_pii=True)
+        result_df = pd.read_csv(result)
+        assert result_df['name'].iloc[0] == '***'
+        assert result_df['email_address'].iloc[0] == '***'
+        assert result_df['course'].iloc[0] != '***'
