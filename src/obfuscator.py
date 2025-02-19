@@ -54,10 +54,7 @@ def process_json_chunk(
         file_content (str): raw data as a string
         fields_list (list): fields to be obfuscated
         output (io.BytesIO): Byte system to write the output
-        chunk_size (int): number of rows to process at a time, 5000 by default
-
-    Returns:
-        bool (False): Update flag for header writing on subsequent chunks
+        chunk_size (int): number of rows to process at a time
     '''
     json_objects = ijson.items(file_content.encode('utf8'), 'item')
     chunk = []
@@ -85,10 +82,7 @@ def process_parquet_chunk(
         file_content (str): raw data as a string
         fields_list (list): fields to be obfuscated
         output (io.BytesIO): Byte system to write the output
-        chunk_size (int): number of rows to process at a time, 5000 by default
-
-    Returns:
-        bool (False): Update flag for header writing on subsequent chunks
+        chunk_size (int): number of rows to process at a time
     '''
     parquet_file = pq.ParquetFile(file_content)
     is_first_chunk = True
@@ -180,7 +174,7 @@ def obfuscate_file(
 
     Returns:
         io.BytesIO: Obfuscated file (as specified in file_type,
-        csv by default) as a byte system
+        csv by default) in a byte system
     '''
     try:
         file_type = file_type.lower()

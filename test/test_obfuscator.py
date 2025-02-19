@@ -293,9 +293,9 @@ class TestConvertCsvToOutputFormat:
         output = convert_csv_to_output_format(test_content, 'parquet')
         try:
             pq.ParquetFile(output)
-            df = pd.read_parquet(output)
         except Exception:
             pytest.fail("Output is not a valid PARQUET")
+        df = pd.read_parquet(output)
         assert "student_id" in df.columns
         assert df.shape[0] > 0
 
