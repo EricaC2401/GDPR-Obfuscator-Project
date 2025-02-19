@@ -41,13 +41,12 @@ def read_s3_file(s3_bucket: str, file_key: str) -> tuple[str, str]:
 
 def write_s3_file(s3_bucket: str, file_key: str, file_content: io.BytesIO):
     '''
-    Write an obfuscated file back to s3.
+    Write a file back to s3, currently support csv/json/parquet.
 
     Args:
         s3_bucket (str): name of the s3_bucket where the file is stored
         file_key (str): name of the file to be obfuscated
-        file_content (io.BytesIO): Byte system of the obfuscated file
-                                   e.g filename.csv
+        file_content (io.BytesIO): Content to write in a byte system
     '''
 
     s3_client = boto3.client("s3")
