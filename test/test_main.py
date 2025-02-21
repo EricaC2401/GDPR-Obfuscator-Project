@@ -118,3 +118,48 @@ class TestHFO:
         assert result_df['name'].iloc[0] == '***'
         assert result_df['email_address'].iloc[0] == '***'
         assert result_df['course'].iloc[0] != '***'
+
+    @pytest.mark.it('Test if corrent field_list with gpt')
+    @patch('src.main.detect_if_pii_with_gpt')
+    def test_correct_field_list_with_gpt(self, mock_auto_gpt, s3_client):
+        mock_auto_gpt.return_value = [
+                                        {"column_name": "name", "score": 0.9},
+                                        {"column_name": "email_address",
+                                            "score": 0.95},
+                                        {"column_name": "course", "score": 0.1}
+                                    ]
+
+        json_dict = {
+                        "file_to_obfuscate": "s3://test_bucket" +
+                                             "/new_data/test_file.csv",
+                        "pii_fields": []
+                    }
+        json_str = json.dumps(json_dict)
+        result = handle_file_obfuscation(json_str,
+                                         if_save_to_s3=False,
+                                         auto_detect_pii=True,
+                                         auto_detect_pii_gpt=True)
+        result_df = pd.read_csv(result)
+        assert result_df['name'].iloc[0] == '***'
+        assert result_df['email_address'].iloc[0] == '***'
+        assert result_df['course'].iloc[0] != '***'
+
+    @pytest.mark.it('Test if corrent field_list auto without gpt')
+    @patch('src.main.detect_if_pii_with_gpt')
+    def test_correct_field_list_auto_without_gpt(
+            self, mock_auto_gpt, s3_client):
+        mock_auto_gpt.return_value = [
+                                        {"column_name": "name", "score": 0.1}
+                                    ]
+
+        json_dict = {
+                        "file_to_obfuscate": "s3://test_bucket" +
+                                             "/new_data/test_file.csv",
+                        "pii_fields": []
+                    }
+        json_str = json.dumps(json_dict)
+        result = handle_file_obfuscation(json_str,
+                                         if_save_to_s3=False,
+                                         auto_detect_pii=True)
+        result_df = pd.read_csv(result)
+        assert result_df['name'].iloc[0] == '***'
