@@ -60,13 +60,51 @@ def test_parquet_data():
 
 
 class TestObfuscateFieldsInDf:
-    @pytest.mark.it('Test if obfuscated fields in the list')
-    def test_obfuscate_specified_fields(self, test_csv_data):
+    @pytest.mark.it('Test if obfuscated fields in the list' +
+                    ' with method equals replace')
+    def test_obfuscate_specified_fields_default(self, test_csv_data):
         test_content, test_fields = test_csv_data
         test_content = pd.read_csv(io.StringIO(test_content))
-        df_obfuscated = obfuscate_fields_in_df(test_content, test_fields)
+        df_obfuscated = obfuscate_fields_in_df(test_content,
+                                               test_fields, 'replace')
         assert all(df_obfuscated['name'] == '***')
         assert all(df_obfuscated['email_address'] == '***')
+
+    @pytest.mark.it('Test if obfuscated fields in the list' +
+                    ' with method equals mask')
+    def test_obfuscate_specified_fields_mask(self, test_csv_data):
+        test_content, test_fields = test_csv_data
+        test_content = pd.read_csv(io.StringIO(test_content))
+        df_obfuscated = obfuscate_fields_in_df(test_content,
+                                               test_fields, 'mask')
+        assert df_obfuscated['name'].iloc[0] == 'J********h'
+        assert df_obfuscated['email_address'].iloc[0] == 'j***************m'
+
+    @pytest.mark.it('Test if obfuscated fields in the list' +
+                    ' with method equals hash')
+    def test_obfuscate_specified_fields_hash(self, test_csv_data):
+        test_content, test_fields = test_csv_data
+        test_content = pd.read_csv(io.StringIO(test_content))
+        df_obfuscated = obfuscate_fields_in_df(test_content,
+                                               test_fields, 'hash')
+        assert df_obfuscated['name'].iloc[0] == \
+            'ef61a579c907bbed674c0dbcbcf7f7af8f851538eef7b8e58c5bee0b8cfdac4a'
+        assert df_obfuscated['email_address'].iloc[0] == \
+            '06977b82208c436b4479f511df34efca1e47dca37efaaba8dd0a5516d22f070b'
+
+    @pytest.mark.it('Test if obfuscated fields in the list' +
+                    ' with method equals random_hash')
+    def test_obfuscate_specified_fields__random_hash(self, test_csv_data):
+        test_content, test_fields = test_csv_data
+        test_content = pd.read_csv(io.StringIO(test_content))
+        df_obfuscated = obfuscate_fields_in_df(test_content,
+                                               test_fields, 'random_hash')
+        assert df_obfuscated['name'].iloc[0] != '***'
+        assert df_obfuscated['name'].iloc[0] != \
+            'ef61a579c907bbed674c0dbcbcf7f7af8f851538eef7b8e58c5bee0b8cfdac4a'
+        assert len(df_obfuscated['email_address'].iloc[0]) == \
+            len('06977b82208c436b4479f511df34efca1e47' +
+                'dca37efaaba8dd0a5516d22f070b')
 
     @pytest.mark.it('Test if the other fields remains the same')
     def test_other_fields_remains_unchanged(self, test_csv_data):
@@ -77,6 +115,16 @@ class TestObfuscateFieldsInDf:
         assert df_obfuscated['student_id'].iloc[0] == 1234
         assert 'graduation_date' in df_obfuscated.columns
         assert df_obfuscated['graduation_date'].iloc[0] == '2024-03-31'
+
+    @pytest.mark.it('Test if ValueError is raised if with an invalid method')
+    def test_valueerror_with_invalid_input(self, test_csv_data):
+        test_content, test_fields = test_csv_data
+        test_content = pd.read_csv(io.StringIO(test_content))
+        with pytest.raises(ValueError,
+                           match="Unknown method: other." +
+                           "Only 'mask', 'hash', 'random_hash'," +
+                           " or 'replace' are accepted"):
+            obfuscate_fields_in_df(test_content, test_fields, 'other')
 
 
 class TestProcessCSVChunk:
@@ -322,7 +370,7 @@ class TestObfuscateFile:
                                             test_content.encode('utf8'))
         obfuscate_file(test_content, test_fields, 'csv', 'json')
         mock_convert_str_csv.assert_called_once_with(
-            test_content, test_fields, 'csv', 5000)
+            test_content, test_fields, 'csv', 5000, 'replace')
         mock_convert_csv_output.assert_called_once_with(
             mock_convert_str_csv.return_value, 'json'
         )
