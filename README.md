@@ -1,13 +1,14 @@
 # GDPR Obfuscator
 
 ## Project Overview
-This project provides a pipeline to read files from an AWS S3 bucket, obfuscate specified personally identifiable information (PII) fields, and then write the obfuscated file back to S3. It currently supports CSV file format.
+This project provides a pipeline to read files from an AWS S3 bucket, obfuscate specified personally identifiable information (PII) fields, and then write the obfuscated file back to S3. It currently supports CSV, JSON and PARQUET file formats and offers optional automatic PII detection via both heuristic and GPT-based methods.. 
 
 ## Features
-- **Read file from s3**: Support CSV file format.
-- **Obfuscate PII fields**: Replace specified sensitive fields with marked value '***'
-- **Write obfuscated file back to S3**: The output file will have the same format as the input file and will be written back to S3. 
+- **Read file from s3**: Support CSV, JSON and PARQUET file format.
+- **Obfuscate PII fields**: Replace specified sensitive fields with marked/ hashed values
+- **Write obfuscated file back to S3**: The output file will be written back to S3. The output format is defaulted to have the same format as the input file but could be the other two available formats
 - **Exception handling**: Manages errors, e.g. unsupported file formats or missing fields
+- **Automatic PII detection**: It can automatically detect PII fields using either a heuristic model or GPT-based detection. This option is designed to assist users, though they can also manually input the fields to obfuscate if preferred.
 
 ## Installation
 - 1. Clone the repository
@@ -32,8 +33,8 @@ The required dependencies are listed in 'requirement.txt'. Install them using
 
 ## Usage
 To obfuscate a file stored in S3, please provide an input JSON string containing:
-- `"file_to_obfuscate"`: the S3 location of the required CSV file for obfuscation
-- `"pii_fields"`: the names of the fields that are required to be obfuscated
+- `"file_to_obfuscate"`: the S3 location of the required CSV/ JSON/ PARQUET file for obfuscation
+- `"pii_fields"`: the names of the fields that are required to be obfuscated; If there are no pii_fields, please input an empty list [] instead of `None` or omitting it.
 
 For example:
 ```json
@@ -42,6 +43,27 @@ For example:
     "pii_fields": ["name", "email_address"]
 }
 ```
+
+## Function: handle_file_obfuscation
+
+This function processes the file obfuscation and provides options for different formats and automatic pII detection
+
+**Parameters**:
+
+- json_string (str): JSON string containing “file_to_obfuscate” and “pii_fields”.
+- if_output_different_format (bool): If True, outputs in a different format (CSV, JSON, Parquet).
+- output_format (str): If if_output_different_format is True, specify the output format, use if if_output_different_format is True.
+- chunk_size (int): Number of rows to process at a time (default is 5000).
+- if_save_to_s3 (bool): If True, saves the obfuscated file to S3 (default is True).
+- auto_detect_pii (bool): If True, automatically detects PII fields using a heuristic model.
+- auto_detect_pii_gpt (bool): If True, detects PII fields using GPT-based detection.
+
+## File Structure
+- `main.py`: The entry point for processing file obfuscation, where the function `handle_file_obfuscation` is located.
+- `obfuscator.py`: Contains the logic for obfuscating the file.
+- `pii_detection.py`: Heuristic model for detecting PII fields.
+- `pii_detection_ai.py`: GPT-based model for detecting PII fields.
+- `utils.py`: Utility functions for reading and writing files to S3.
 
 ## Testing
 Run test using pytest
