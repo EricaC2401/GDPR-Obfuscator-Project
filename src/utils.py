@@ -2,7 +2,10 @@ import boto3
 import io
 import json
 import pyarrow.parquet as pq
+from src.setup_logger import setup_logger
 
+
+logger = setup_logger(__name__)
 
 def read_s3_file(s3_bucket: str, file_key: str) -> tuple[str, str]:
     '''
@@ -16,6 +19,7 @@ def read_s3_file(s3_bucket: str, file_key: str) -> tuple[str, str]:
     Returns:
         tuple [str,str]: File content as a str and its file type
     '''
+    logger.debug(f"Reading file '{file_key}' from bucket '{s3_bucket}'")
 
     s3_client = boto3.client('s3')
 
@@ -32,11 +36,14 @@ def read_s3_file(s3_bucket: str, file_key: str) -> tuple[str, str]:
             content_str = table.to_pandas().to_csv(index=False)
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
+        logger.info(f"Successfully read '{file_key}' ({file_extension}) from S3")
         return (content_str, file_extension)
     except ValueError as ve:
-        raise ve
-    except Exception as e:
-        raise Exception(f'Unexpected Error: {str(e)}')
+        logger.error(f"ValueError: {ve}")
+        raise
+    except Exception:
+        logger.exception("Unexpected error occurred while reading S3 file")
+        raise
 
 
 def write_s3_file(s3_bucket: str, file_key: str, file_content: io.BytesIO):
@@ -48,6 +55,7 @@ def write_s3_file(s3_bucket: str, file_key: str, file_content: io.BytesIO):
         file_key (str): name of the file to be obfuscated
         file_content (io.BytesIO): Content to write in a byte system
     '''
+    logger.debug(f"Writing file '{file_key}' to bucket '{s3_bucket}'")
 
     s3_client = boto3.client("s3")
 
@@ -66,14 +74,15 @@ def write_s3_file(s3_bucket: str, file_key: str, file_content: io.BytesIO):
                 Key=file_key,
                 Body=body_content
             )
-
+        logger.info(f"Successfully uploaded '{file_key}' to S3 bucket '{s3_bucket}'")
         return (f"{file_key} has been successfully "
                 f"uploaded to s3 bucket {s3_bucket}")
-    except ValueError as ve:
-        raise ValueError(f'ValueError: {str(ve)}')
-    except Exception as e:
-        raise Exception(f'Unexpected Error: {str(e)}')
-
+    except ValueError:
+        logger.info(f"Successfully uploaded '{file_key}' to S3 bucket '{s3_bucket}'")
+        raise
+    except Exception:
+        logger.exception("Unexpected error occurred while writing to S3")
+        raise
 
 def json_input_handler(json_input: str) -> tuple[str, str, list]:
     '''
@@ -87,6 +96,7 @@ def json_input_handler(json_input: str) -> tuple[str, str, list]:
     Returns:
         tuple[str,str,list]: S3 Bucket Name, S3 Key Name, ppi_fields
     '''
+    logger.info("Parsing JSON input")
 
     try:
         json_dict = json.loads(json_input)
@@ -100,12 +110,14 @@ def json_input_handler(json_input: str) -> tuple[str, str, list]:
 
         fields_list = json_dict['pii_fields']
 
+        logger.debug(f"Extracted S3 bucket: {s3_bucket}, file key: {file_key}")
         return (s3_bucket, file_key, fields_list)
-    except TypeError:
-        raise TypeError("The input is not a JSON string")
     except json.JSONDecodeError:
-        raise ValueError("Invalid JSON input")
-    except ValueError:
-        raise ValueError("Invalid JSON input")
+        logger.error("Invalid JSON input: Unable to decode JSON")
+        raise
+    except ValueError as ve:
+        logger.error(f"ValueError: {ve}")
+        raise
     except Exception as e:
-        raise Exception(f'Unexpected error: {str(e)}')
+        logger.exception("Unexpected error occurred while parsing JSON input")
+        raise

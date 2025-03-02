@@ -121,7 +121,7 @@ class TestObfuscateFieldsInDf:
         test_content, test_fields = test_csv_data
         test_content = pd.read_csv(io.StringIO(test_content))
         with pytest.raises(ValueError,
-                           match="Unknown method: other." +
+                           match="Unknown method: other. " +
                            "Only 'mask', 'hash', 'random_hash'," +
                            " or 'replace' are accepted"):
             obfuscate_fields_in_df(test_content, test_fields, 'other')
@@ -138,7 +138,7 @@ class TestProcessCSVChunk:
         mock_obfuscate_fields.return_value = test_content.copy()
         process_df_chunk(test_content, test_fields, output_buffer, True)
         mock_obfuscate_fields.assert_called_once_with(
-            test_content, test_fields)
+            test_content, test_fields, 'replace')
 
     @pytest.mark.it('Test if the output is a valid csv')
     def test_output_is_valid_csv(self, test_csv_data):

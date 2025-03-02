@@ -1,5 +1,5 @@
 import pytest
-from src.ppi_detection import is_pii_by_heuristic, detect_if_pii
+from src.pii_detection import is_pii_by_heuristic, detect_if_pii
 
 
 class TestIsPIIByHeruistic:

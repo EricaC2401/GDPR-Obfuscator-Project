@@ -60,14 +60,12 @@ class TestDetectIfPiiWithGpt:
         assert result[0]["score"] == 1.0
         assert result[0]["reason"] == "Contains personal email addresses"
 
-    @pytest.mark.it('Test if the output content are correct')
+    @pytest.mark.it('Test if OpenAIError is raised')
     @patch('src.pii_detection_ai.client.chat.completions.create')
     def test_if_with_gpt_error(self, mock_opanai):
         mock_opanai.side_effect = openai.OpenAIError('API connection failed')
 
         test_column_names = ["name", "email"]
 
-        result = detect_if_pii_with_gpt(test_column_names)
-
-        assert 'error' in result
-        assert result['error'] == 'API connection failed'
+        with pytest.raises(openai.OpenAIError):
+            detect_if_pii_with_gpt(test_column_names)

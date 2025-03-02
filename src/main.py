@@ -5,7 +5,10 @@ from src.pii_detection_ai import detect_if_pii_with_gpt
 from typing import Literal
 import pandas as pd
 import io
+from src.setup_logger import setup_logger
 
+
+logger = setup_logger(__name__)
 
 def handle_file_obfuscation(
         json_string: str,
@@ -47,6 +50,7 @@ def handle_file_obfuscation(
     '''
     try:
         s3_bucket, file_key, fields_list = json_input_handler(json_string)
+        logger.info(f"Processing file: s3://{s3_bucket}/{file_key}")
 
         content_str, file_extension = read_s3_file(s3_bucket, file_key)
 
@@ -54,16 +58,20 @@ def handle_file_obfuscation(
             df_step = pd.read_csv(io.StringIO(content_str))
             fields_list = [col_name for col_name in
                            df_step.columns if detect_if_pii(col_name)]
+            logger.info(f"Detected PII fields (heuristic): {fields_list}")
             if auto_detect_pii_gpt:
                 gpt_result = detect_if_pii_with_gpt(list(df_step.columns))
                 fields_list = [item['column_name'] for item in gpt_result
                                if item['score'] > 0.6]
+                logger.info(f"Detected PII fields (GPT): {fields_list}")
 
         if if_output_different_format:
+            logger.info(f"Obfuscating file to {output_format} format")
             content_BytesIO = obfuscate_file(
                 content_str, fields_list, file_extension,
                 output_format, chunk_size)
         else:
+            logger.info(f"Obfuscating file in original format")
             content_BytesIO = obfuscate_file(
                 content_str, fields_list, file_extension,
                 chunk_size=chunk_size)
@@ -71,10 +79,11 @@ def handle_file_obfuscation(
         if if_save_to_s3:
             output_file_key = file_key.replace('new_data', 'processed_data')
             write_s3_file(s3_bucket, output_file_key, content_BytesIO)
-
+            logger.info(f"Saving obfuscated file to s3://{s3_bucket}/{output_file_key}")
             return ('Obfuscated file saved to s3://' +
                     f'{s3_bucket}/{output_file_key}')
         else:
             return content_BytesIO
     except Exception as e:
+        logger.error(f"Error occurred: {str(e)}")
         raise Exception(str(e))

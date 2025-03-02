@@ -1,8 +1,11 @@
 import json
 import openai
 from openai import OpenAI
+from src.setup_logger import setup_logger
 client = OpenAI()
 
+
+logger = setup_logger(__name__)
 
 def detect_if_pii_with_gpt(column_names: list[str]) -> list[dict[str, any]]:
     '''
@@ -18,6 +21,8 @@ def detect_if_pii_with_gpt(column_names: list[str]) -> list[dict[str, any]]:
                            not PII) to 1.0 (definitely PII)
         - 'reason' (str): A brief explaination for the assigned score
     '''
+    logger.debug(f"Starting PII detection with GPT for columns: {column_names}")
+
     formatted_columns = '\n'.join([f"- {col}" for col in column_names])
     prompt = f"""
                 Act as a data privacy expert.
@@ -38,20 +43,26 @@ def detect_if_pii_with_gpt(column_names: list[str]) -> list[dict[str, any]]:
                 [{{'column_name':'email', 'score': 1.0, 'reason': 'xxx'}},,,]
             """
     try:
+        logger.info("Sending request to GPT for PII detection.")
         completion = client.chat.completions.create(
                         model='gpt-3.5-turbo',
                         messages=[{'role': 'user', 'content': prompt}],
                         temperature=0,
                         max_tokens=1000
                     )
-        print(completion)
+        logger.info("Received response from GPT.")
         result_str = completion.choices[0].message.content
+        logger.debug(f"Raw response from GPT: {result_str}")
         result_str = result_str.replace("'", '"')
         result = json.loads(result_str)
+        logger.info("PII detection completed successfully.")
         return result
     except json.JSONDecodeError:
-        return {"error": "Invalid JSON response fro GPT"}
+        logger.error("Invalid JSON input: Unable to decode JSON")
+        raise
     except openai.OpenAIError as oe:
-        return {"error": str(oe)}
+        logger.error(f"OpenAI API error: {str(oe)}")
+        raise
     except Exception as e:
-        return {'Unexcepted error': str(e)}
+        logger.error(f"Unexpected error occurred: {str(e)}")
+        raise

@@ -1,4 +1,8 @@
 import re
+from src.setup_logger import setup_logger
+
+
+logger = setup_logger(__name__)
 
 pii_dict = {
     "student_id": False,
@@ -97,6 +101,7 @@ def is_pii_by_heuristic(column_name: str) -> bool:
     Returns:
         bool: True if detected is pii, False otherwise
     '''
+    logger.debug(f"Checking if column '{column_name}' is PII using heuristic method.")
     if any(term in column_name.lower() for term in ppi_terms):
         if any(term in column_name.lower() for term in non_pii_terms):
             return False
@@ -104,7 +109,9 @@ def is_pii_by_heuristic(column_name: str) -> bool:
     else:
         for pattern in ppi_patterns:
             if re.search(pattern, column_name, re.IGNORECASE):
+                logger.debug(f"Column '{column_name}' matches pattern: {pattern}.")
                 return True
+    logger.debug(f"Column '{column_name}' is not detected as PII by heuristic.")
     return False
 
 
@@ -118,9 +125,15 @@ def detect_if_pii(column_name: str) -> bool:
     Returns:
         bool: True if detected is pii, False otherwise
     '''
+    logger.debug(f"Detecting if column '{column_name}' is PII.")
     if ' ' in column_name:
         column_name = column_name.replace(' ', "_")
+        logger.debug(f"Replaced spaces with underscores: {column_name}")
     if column_name in pii_dict:
+        logger.debug(f"Column '{column_name}' found in PII " + 
+                     "dictionary with result: {pii_dict[column_name]}")
         return pii_dict[column_name]
     else:
+        logger.debug(f"Column '{column_name}' not found in PII dictionary." +
+                     " Applying heuristic.")
         return is_pii_by_heuristic(column_name)
