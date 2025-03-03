@@ -58,14 +58,15 @@ def handle_file_obfuscation(
 
         if auto_detect_pii:
             df_step = pd.read_csv(io.StringIO(content_str))
-            fields_list = [col_name for col_name in
-                           df_step.columns if detect_if_pii(col_name)]
-            logger.info(f"Detected PII fields (heuristic): {fields_list}")
             if auto_detect_pii_gpt:
                 gpt_result = detect_if_pii_with_gpt(list(df_step.columns))
                 fields_list = [item['column_name'] for item in gpt_result
                                if item['score'] > 0.6]
                 logger.info(f"Detected PII fields (GPT): {fields_list}")
+            else:
+                fields_list = [col_name for col_name in
+                           df_step.columns if detect_if_pii(col_name)]
+                logger.info(f"Detected PII fields (heuristic): {fields_list}")
 
         if if_output_different_format:
             logger.info(f"Obfuscating file to {output_format} format")
@@ -79,7 +80,8 @@ def handle_file_obfuscation(
                 chunk_size=chunk_size)
 
         if if_save_to_s3:
-            output_file_key = file_key.replace("new_data", "processed_data")
+            input_folder_name = file_key.split('/')[0]
+            output_file_key = file_key.replace(input_folder_name, "processed_data")
             write_s3_file(s3_bucket, output_file_key, content_BytesIO)
             logger.info("Saving obfuscated file to s3:" +
                         f"//{s3_bucket}/{output_file_key}")

@@ -11,7 +11,7 @@ logger = setup_logger(__name__)
 
 def detect_if_pii_with_gpt(column_names: list[str]) -> list[dict[str, any]]:
     """
-    Identify if the input column names contains PII using ChatGPT
+    Identify how likely the input column names contains PII using ChatGPT
 
     Args:
         column_name (list(str)): The column names to detect if ppi

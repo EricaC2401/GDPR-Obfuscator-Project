@@ -94,6 +94,8 @@ def process_df_chunk(
 ):
     """
     Process df, obfuscating the specified fields
+    This function does not reutrn anything,
+    just save the processed data as csv in the byte system (output)
 
     Args:
         chunk (pd.DataFrame): DataFrame chunk of the CSV file
@@ -134,6 +136,8 @@ def process_json_chunk(
 ):
     """
     Process JSON data in chunk, obfuscating the specified fields
+    This function does not reutrn anything,
+    just save the processed data as csv in the byte system (output)
 
     Args:
         file_content (str): raw data as a string
@@ -185,6 +189,8 @@ def process_parquet_chunk(
 ):
     """
     Process a parquet data in chunk, obfuscating the specified fields
+    This function does not reutrn anything,
+    just save the processed data as csv in the byte system (output)
 
     Args:
         file_content (str): raw data as a string
@@ -318,7 +324,8 @@ def obfuscate_file(
     obfuscate_method: str = "replace",
 ) -> io.BytesIO:
     """
-    Obfuscate the specified field in the file content
+    Obfuscate the specified field in the file content.
+    Integrate the above functions
 
     Args:
         file_content (str): raw data as a string
