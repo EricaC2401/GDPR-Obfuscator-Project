@@ -44,6 +44,22 @@ For example:
 }
 ```
 
+Example of the target file:
+```csv
+student_id,name,course,cohort,graduation_date,email_address
+...
+1234,'John Smith','Software','2024-03-31','j.smith@email.com'
+...
+```
+
+The output might be like:
+```csv
+student_id,name,course,cohort,graduation_date,email_address
+...
+1234,'***','Software','2024-03-31','***'
+...
+```
+
 ## Function: handle_file_obfuscation
 
 This function processes the file obfuscation and provides options for different formats and automatic pII detection
@@ -58,12 +74,28 @@ This function processes the file obfuscation and provides options for different 
 - auto_detect_pii (bool): If True, automatically detects PII fields using a heuristic model.
 - auto_detect_pii_gpt (bool): If True, detects PII fields using GPT-based detection.
 
+
+## PII Detection (Optional GPT API Integration)
+
+This tool includes an **optional** feature to detect PII fields using the heuristic method or GPT API.
+However, this is only a **tool** to assist with detection, and its accuracy is not guranteed.
+
+**Optional GPT API Integration**
+- The tool does **not** include an API key. To enable GPT-based PII detection, users need to provide their **own API key**.
+- **Any API usage fees** incurred are the responsibility of the user.
+
+To enable GPT-based detection, export your OpenAI API key before running the tool:
+```bash
+export OPENAI_API_KEY="your_api_key"
+```
+
 ## File Structure
 - `main.py`: The entry point for processing file obfuscation, where the function `handle_file_obfuscation` is located.
 - `obfuscator.py`: Contains the logic for obfuscating the file.
 - `pii_detection.py`: Heuristic model for detecting PII fields.
 - `pii_detection_ai.py`: GPT-based model for detecting PII fields.
 - `utils.py`: Utility functions for reading and writing files to S3.
+- `settup_logger.py`: Helper function for setting logger
 
 ## Testing/ Running Checks
 Run test using pytest:
