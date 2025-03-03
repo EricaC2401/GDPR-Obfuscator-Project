@@ -65,5 +65,23 @@ This function processes the file obfuscation and provides options for different 
 - `pii_detection_ai.py`: GPT-based model for detecting PII fields.
 - `utils.py`: Utility functions for reading and writing files to S3.
 
-## Testing
-Run test using pytest
+## Testing/ Running Checks
+Run test using pytest:
+```bash
+pytest test/test_main.py
+```
+
+or to run all unit tests, use the following command:
+
+```bash
+make unit-test
+```
+
+To run unit tests along with security checks, formatting checks, and coverage reports, use:
+```bash
+make run-checks
+```
+
+
+## Continuous Integration & Deployment (CI/CD)
+This project uses **GitHub Actions** for automated testing and checks.
