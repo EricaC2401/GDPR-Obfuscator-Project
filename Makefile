@@ -36,7 +36,7 @@ safety: create-environment
 
 ## Install flake8
 flake8: create-environment
-	$(call execute_in_env $(PIP) install flake8)
+	$(call execute_in_env, $(PIP) install flake8)
 
 # Install black
 #black: create-environment
