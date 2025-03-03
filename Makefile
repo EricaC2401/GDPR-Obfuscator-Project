@@ -61,7 +61,7 @@ format-check: flake8
 unit-test:
 	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest test/* -vvvrp --testdox)
 
-check-coverage:
+check-coverage: coverage
 	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' \
 	-m pytest test/* && coverage report -m)
 
