@@ -3,10 +3,14 @@ from moto import mock_aws
 import pytest
 from unittest.mock import patch
 import os
-from src.main import handle_file_obfuscation
 import json
 import io
 import pandas as pd
+try:
+    os.environ["OPENAI_API_KEY"] = "test_api_key"
+except KeyError:
+    pass
+from src.main import handle_file_obfuscation
 
 
 @pytest.fixture()

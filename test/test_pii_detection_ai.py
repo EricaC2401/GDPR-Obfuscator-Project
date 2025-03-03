@@ -1,6 +1,11 @@
 import pytest
 import openai
 from unittest.mock import patch, MagicMock
+import os
+try:
+    os.environ["OPENAI_API_KEY"] = "test_api_key"
+except KeyError:
+    pass
 from src.pii_detection_ai import detect_if_pii_with_gpt
 
 
