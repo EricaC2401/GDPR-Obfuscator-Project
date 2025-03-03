@@ -36,7 +36,7 @@ safety: create-environment
 
 ## Install flake8
 flake8: create-environment
-	$(call execute_in_envm $(PIP) install flake8)
+	$(call execute_in_env $(PIP) install flake8)
 
 # Install black
 #black: create-environment
@@ -58,4 +58,11 @@ format-check: flake8
 # $(call execute_in_env, black */*.py)
 	$(call execute_in_env, flake8 */*.py)
 
-run-checks: security-test
+unit-test:
+	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest test/* -vvvrp --testdox)
+
+check-coverage:
+	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' \
+	-m pytest test/* && coverage report -m)
+
+run-checks: security-test format-check unit-test check-coverage
