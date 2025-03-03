@@ -2,12 +2,13 @@ import logging
 import json
 
 """
-Aim: 
+Aim:
 Set up and return a logger with JSON formatting
-parameter: name 
+parameter: name
 (differnt logging instances but still in the same log group)
-output: a logger, could be used in the other functions 
+output: a logger, could be used in the other functions
 """
+
 
 class JSONFormatter(logging.Formatter):
     def format(self, record):
@@ -20,6 +21,7 @@ class JSONFormatter(logging.Formatter):
             "funcName": record.funcName,
         }
         return json.dumps(log_obj)
+
 
 def setup_logger(name: str):
     logger = logging.getLogger(name)

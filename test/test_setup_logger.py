@@ -16,7 +16,7 @@ class TestLoggerSetup(unittest.TestCase):
     def test_only_one_handler(self):
         logger1 = setup_logger("Utility Functions")
         self.assertEqual(len(logger1.handlers), 1)
-        logger2 = setup_logger("Utility Functions")
+        setup_logger("Utility Functions")
         self.assertEqual(len(logger1.handlers), 1)
 
     @pytest.mark.it("Test if the output is correct in each field")
@@ -41,5 +41,6 @@ class TestLoggerSetup(unittest.TestCase):
         self.assertIn('"name": "test_logger"', log_message)
         self.assertIn('"message": "Testing"', log_message)
         self.assertIn('"filename": "test_setup_logger.py"', log_message)
-        self.assertIn('"funcName": "test_if_correct_output_each_field"', log_message)
+        self.assertIn('"funcName": "test_if_correct_output_each_field"',
+                      log_message)
         self.assertIn('"table": "test_table"', log_message)

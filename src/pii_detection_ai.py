@@ -2,13 +2,15 @@ import json
 import openai
 from openai import OpenAI
 from src.setup_logger import setup_logger
+
 client = OpenAI()
 
 
 logger = setup_logger(__name__)
 
+
 def detect_if_pii_with_gpt(column_names: list[str]) -> list[dict[str, any]]:
-    '''
+    """
     Identify if the input column names contains PII using ChatGPT
 
     Args:
@@ -20,10 +22,11 @@ def detect_if_pii_with_gpt(column_names: list[str]) -> list[dict[str, any]]:
         - 'score' (float): A likelihood score ranging from 0.0 (definitely
                            not PII) to 1.0 (definitely PII)
         - 'reason' (str): A brief explaination for the assigned score
-    '''
-    logger.debug(f"Starting PII detection with GPT for columns: {column_names}")
+    """
+    logger.debug("Starting PII detection with GPT " +
+                 f"for columns: {column_names}")
 
-    formatted_columns = '\n'.join([f"- {col}" for col in column_names])
+    formatted_columns = "\n".join([f"- {col}" for col in column_names])
     prompt = f"""
                 Act as a data privacy expert.
                 Given the list of column name below, classify how likely
@@ -45,11 +48,11 @@ def detect_if_pii_with_gpt(column_names: list[str]) -> list[dict[str, any]]:
     try:
         logger.info("Sending request to GPT for PII detection.")
         completion = client.chat.completions.create(
-                        model='gpt-3.5-turbo',
-                        messages=[{'role': 'user', 'content': prompt}],
-                        temperature=0,
-                        max_tokens=1000
-                    )
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0,
+            max_tokens=1000,
+        )
         logger.info("Received response from GPT.")
         result_str = completion.choices[0].message.content
         logger.debug(f"Raw response from GPT: {result_str}")

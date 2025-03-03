@@ -10,15 +10,17 @@ from src.setup_logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 def handle_file_obfuscation(
-        json_string: str,
-        if_output_different_format: bool = False,
-        output_format: Literal['csv', 'json', 'parquet', None] = None,
-        chunk_size: int = 5000,
-        if_save_to_s3: bool = True,
-        auto_detect_pii: bool = False,
-        auto_detect_pii_gpt: bool = False):
-    '''
+    json_string: str,
+    if_output_different_format: bool = False,
+    output_format: Literal["csv", "json", "parquet", None] = None,
+    chunk_size: int = 5000,
+    if_save_to_s3: bool = True,
+    auto_detect_pii: bool = False,
+    auto_detect_pii_gpt: bool = False,
+):
+    """
     Process the file obfuscation
 
     Args:
@@ -47,7 +49,7 @@ def handle_file_obfuscation(
         auto_detect_pii_gpt (bool):
             If True, automatically detect PII fields in the dataset using GPT.
             If False, detect PII fields using heuristic model.
-    '''
+    """
     try:
         s3_bucket, file_key, fields_list = json_input_handler(json_string)
         logger.info(f"Processing file: s3://{s3_bucket}/{file_key}")
@@ -71,15 +73,16 @@ def handle_file_obfuscation(
                 content_str, fields_list, file_extension,
                 output_format, chunk_size)
         else:
-            logger.info(f"Obfuscating file in original format")
+            logger.info("Obfuscating file in original format")
             content_BytesIO = obfuscate_file(
                 content_str, fields_list, file_extension,
                 chunk_size=chunk_size)
 
         if if_save_to_s3:
-            output_file_key = file_key.replace('new_data', 'processed_data')
+            output_file_key = file_key.replace("new_data", "processed_data")
             write_s3_file(s3_bucket, output_file_key, content_BytesIO)
-            logger.info(f"Saving obfuscated file to s3://{s3_bucket}/{output_file_key}")
+            logger.info("Saving obfuscated file to s3:" +
+                        f"//{s3_bucket}/{output_file_key}")
             return ('Obfuscated file saved to s3://' +
                     f'{s3_bucket}/{output_file_key}')
         else:

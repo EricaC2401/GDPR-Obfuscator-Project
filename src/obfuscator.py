@@ -10,10 +10,11 @@ from src.setup_logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 def obfuscate_fields_in_df(
-        df: pd.DataFrame, fields_list: list,
-        method: str = 'replace') -> pd.DataFrame:
-    '''
+    df: pd.DataFrame, fields_list: list, method: str = "replace"
+) -> pd.DataFrame:
+    """
     Obfuscates the specified fields in the provided Dataframe
 
     Args:
@@ -33,23 +34,29 @@ def obfuscate_fields_in_df(
 
     Returns:
         pd.DataFrame: Dataframe with specified fields obfuscated
-    '''
+    """
     logger.info(f"Obfuscating fields: {fields_list} with method: {method}")
-    valid_methods = ['mask', 'hash', 'random_hash', 'replace']
+    valid_methods = ["mask", "hash", "random_hash", "replace"]
     if method not in valid_methods:
-        logger.error(f"Invalid method: {method}. Accepted methods are {valid_methods}.")
-        raise ValueError(f"Unknown method: {method}. " +
-                         "Only 'mask', 'hash', 'random_hash', or 'replace' are accepted.")
+        logger.error(f"Invalid method: {method}. " +
+                     f"Accepted methods are {valid_methods}.")
+        raise ValueError(
+            f"Unknown method: {method}. "
+            + "Only 'mask', 'hash', 'random_hash', or 'replace' are accepted."
+        )
     for field in fields_list:
         if field in df.columns:
             try:
-                if method == 'mask':
+                if method == "mask":
                     logger.debug(f"Masking field: {field}")
                     df[field] = df[field].apply(
-                            lambda x: x[0] + '*'*(len(x)-2) + x[-1]
-                            if len(x) > 2 else '*'*len(x)
+                        lambda x: (
+                            x[0] + "*" * (len(x) - 2) + x[-1]
+                            if len(x) > 2
+                            else "*" * len(x)
                         )
-                elif method == 'hash':
+                    )
+                elif method == "hash":
                     logger.debug(f"Hashing field: {field}")
                     df[field] = df[field].apply(
                             lambda x: hashlib.sha256(
@@ -57,30 +64,35 @@ def obfuscate_fields_in_df(
                         )
                 elif method == 'random_hash':
                     salt = str(random.randint(0, 99999))
-                    logger.debug(f"Random hashing field: {field} with salt {salt}")
+                    logger.debug("Random hashing field: " +
+                                 f"{field} with salt {salt}")
                     df[field] = df[field].apply(
                             lambda x: hashlib.sha256(
                                 (x+salt).encode('utf-8')).hexdigest()
                         )
                 elif method == 'replace':
                     logger.debug(f"Replacing field: {field} with '***'")
-                    df[field] = '***'
-            except Exception:
-                logger.error(f"Unexpected error occurred while processing field: {field} - {str(e)}")
-                df[field] = '***'
+                    df[field] = "***"
+            except Exception as e:
+                logger.error(
+                    "Unexpected error occurred while processing field: " +
+                    f"{field} - {str(e)}"
+                )
+                df[field] = "***"
         else:
             logger.warning(f"Field '{field}' not found in the DataFrame.")
-            raise KeyError(f"Field '{field}' not" +
-                           "found in the data.")
+            raise KeyError(f"Field '{field}' not" + "found in the data.")
     return df
 
 
 def process_df_chunk(
-        chunk: pd.DataFrame, fields_list: list[str],
-        output: io.BytesIO, is_first_chunk: bool,
-        obfuscate_method: str = 'replace'
-        ):
-    '''
+    chunk: pd.DataFrame,
+    fields_list: list[str],
+    output: io.BytesIO,
+    is_first_chunk: bool,
+    obfuscate_method: str = "replace",
+):
+    """
     Process df, obfuscating the specified fields
 
     Args:
@@ -99,10 +111,13 @@ def process_df_chunk(
                producing different hashes on each run.
             - 'replace': Replaces all values in the specified fields
                 with '***'.
-    '''
+    """
     logger.info(f"Processing chunk of size {len(chunk)}")
     try:
-        obfuscated_df = obfuscate_fields_in_df(chunk, fields_list, obfuscate_method)
+        obfuscated_df = obfuscate_fields_in_df(
+                                                chunk,
+                                                fields_list,
+                                                obfuscate_method)
         obfuscated_df.to_csv(output, index=False, header=is_first_chunk)
         logger.info("Chunk processed and written to output.")
     except Exception as e:
@@ -111,11 +126,13 @@ def process_df_chunk(
 
 
 def process_json_chunk(
-        file_content: str, fields_list: list[str],
-        output: io.BytesIO, chunk_size: int,
-        obfuscate_method: str = 'replace'
-        ):
-    '''
+    file_content: str,
+    fields_list: list[str],
+    output: io.BytesIO,
+    chunk_size: int,
+    obfuscate_method: str = "replace",
+):
+    """
     Process JSON data in chunk, obfuscating the specified fields
 
     Args:
@@ -134,9 +151,9 @@ def process_json_chunk(
                producing different hashes on each run.
             - 'replace': Replaces all values in the specified fields
                 with '***'.
-    '''
+    """
     logger.info(f"Processing JSON data with chunk size {chunk_size}")
-    json_objects = ijson.items(file_content.encode('utf8'), 'item')
+    json_objects = ijson.items(file_content.encode("utf8"), "item")
     chunk = []
     is_first_chunk = True
     for obj in json_objects:
@@ -149,17 +166,24 @@ def process_json_chunk(
             chunk = []
     if chunk:
         step_df = pd.DataFrame(chunk)
-        process_df_chunk(step_df, fields_list, output,
-                         is_first_chunk, obfuscate_method)
+        process_df_chunk(
+                         step_df,
+                         fields_list,
+                         output,
+                         is_first_chunk,
+                         obfuscate_method
+                         )
         logger.info("Processed remaining JSON objects.")
 
 
 def process_parquet_chunk(
-        file_content: str, fields_list: list[str],
-        output: io.BytesIO, chunk_size: int,
-        obfuscate_method: str = 'replace'
-        ):
-    '''
+    file_content: str,
+    fields_list: list[str],
+    output: io.BytesIO,
+    chunk_size: int,
+    obfuscate_method: str = "replace",
+):
+    """
     Process a parquet data in chunk, obfuscating the specified fields
 
     Args:
@@ -178,7 +202,7 @@ def process_parquet_chunk(
                producing different hashes on each run.
             - 'replace': Replaces all values in the specified fields
                 with '***'.
-    '''
+    """
     logger.info(f"Processing Parquet data with chunk size {chunk_size}")
     parquet_file = pq.ParquetFile(file_content)
     is_first_chunk = True
@@ -192,12 +216,13 @@ def process_parquet_chunk(
 
 
 def convert_str_file_content_to_obfuscated_csv(
-        file_content: str, fields_list: list[str],
-        file_type: Literal['csv', 'json', 'parquet'] = 'csv',
-        chunk_size: int = 5000,
-        obfuscate_method: str = 'replace'
-        ) -> io.BytesIO:
-    '''
+    file_content: str,
+    fields_list: list[str],
+    file_type: Literal["csv", "json", "parquet"] = "csv",
+    chunk_size: int = 5000,
+    obfuscate_method: str = "replace",
+) -> io.BytesIO:
+    """
     Obfuscate the specified field in the file content
 
     Args:
@@ -219,27 +244,34 @@ def convert_str_file_content_to_obfuscated_csv(
 
     Returns:
         io.BytesIO: Obfuscated file as csv in a byte system
-    '''
-    logger.info(f"Converting file of type {file_type} with chunk size {chunk_size}")
-    if file_type not in ['csv', 'json', 'parquet']:
+    """
+    logger.info(f"Converting file of type {file_type} " +
+                "with chunk size {chunk_size}")
+    if file_type not in ["csv", "json", "parquet"]:
         logger.error(f"Unsupported file type: {file_type}")
-        raise ValueError(f"Sorry that {file_type} is not supported. " +
-                         "This tool currently only support csv/json/parquet")
+        raise ValueError(
+            f"Sorry that {file_type} is not supported. "
+            + "This tool currently only support csv/json/parquet"
+        )
     output = io.BytesIO()
     is_first_chunk = True
-    if file_type == 'csv':
-        chunk_iter = pd.read_csv(io.StringIO(file_content),
+    if file_type == "csv":
+        chunk_iter = pd.read_csv(
+                                 io.StringIO(file_content),
                                  chunksize=chunk_size)
         for chunk in chunk_iter:
-            process_df_chunk(chunk, fields_list, output,
-                             is_first_chunk, obfuscate_method)
+            process_df_chunk(
+                chunk, fields_list, output, is_first_chunk, obfuscate_method
+            )
             is_first_chunk = False
-    elif file_type == 'json':
-        process_json_chunk(file_content, fields_list, output,
-                           chunk_size, obfuscate_method)
-    elif file_type == 'parquet':
-        process_parquet_chunk(file_content, fields_list, output,
-                              chunk_size, obfuscate_method)
+    elif file_type == "json":
+        process_json_chunk(
+            file_content, fields_list, output, chunk_size, obfuscate_method
+        )
+    elif file_type == "parquet":
+        process_parquet_chunk(
+            file_content, fields_list, output, chunk_size, obfuscate_method
+        )
 
     output.seek(0)
     logger.info("File successfully converted and obfuscated.")
@@ -247,9 +279,9 @@ def convert_str_file_content_to_obfuscated_csv(
 
 
 def convert_csv_to_output_format(
-        csv_bytes: io.BytesIO, output_format: Literal['json', 'parquet']
-        ) -> io.BytesIO:
-    '''
+    csv_bytes: io.BytesIO, output_format: Literal["json", "parquet"]
+) -> io.BytesIO:
+    """
     Convert an obfuscated CSV stored in io.BytesIO to JSON or PARQUET format
 
     Args:
@@ -258,30 +290,34 @@ def convert_csv_to_output_format(
 
     Returns:
         io.BytesIO: Converted file in json or parquet
-    '''
+    """
     logger.info(f"Converting CSV to {output_format} format.")
     csv_bytes.seek(0)
     df = pd.read_csv(csv_bytes)
     output = io.BytesIO()
-    if output_format == 'json':
-        df.to_json(output, orient='records', lines=True)
-    elif output_format == 'parquet':
-        df.to_parquet(output, index=False, engine='pyarrow')
+    if output_format == "json":
+        df.to_json(output, orient="records", lines=True)
+    elif output_format == "parquet":
+        df.to_parquet(output, index=False, engine="pyarrow")
     else:
         logger.error(f"Unsupported output format: {output_format}")
-        raise ValueError("Unsupported format." +
-                         " Only 'json' and 'parquet' are allowed.")
+        raise ValueError(
+            "Unsupported format." + " Only 'json' and 'parquet' are allowed."
+        )
     output.seek(0)
     logger.info(f"Conversion to {output_format} completed.")
     return output
 
 
 def obfuscate_file(
-        file_content: str, fields_list: list, file_type: str = 'csv',
-        output_format: str = None, chunk_size: int = 5000,
-        obfuscate_method: str = 'replace'
-        ) -> io.BytesIO:
-    '''
+    file_content: str,
+    fields_list: list,
+    file_type: str = "csv",
+    output_format: str = None,
+    chunk_size: int = 5000,
+    obfuscate_method: str = "replace",
+) -> io.BytesIO:
+    """
     Obfuscate the specified field in the file content
 
     Args:
@@ -306,24 +342,28 @@ def obfuscate_file(
     Returns:
         io.BytesIO: Obfuscated file (as specified in file_type,
         csv by default) in a byte system
-    '''
-    logger.info(f"Obfuscating file of type {file_type}" +
-                " with obfuscation method: {obfuscate_method}")
+    """
+    logger.info(
+        f"Obfuscating file of type {file_type}"
+        + f" with obfuscation method: {obfuscate_method}"
+    )
     try:
         file_type = file_type.lower()
         output = convert_str_file_content_to_obfuscated_csv(
-                file_content, fields_list, file_type,
-                chunk_size, obfuscate_method)
+            file_content, fields_list, file_type, chunk_size, obfuscate_method
+        )
         if output_format is None:
             output_format = file_type
-        elif output_format not in ['csv', 'json', 'parquet']:
+        elif output_format not in ["csv", "json", "parquet"]:
             logger.error(f"Unsupported output format: {output_format}")
-            raise ValueError(f"Sorry that {output_format} is not supported. " +
-                             "This tool currently only support " +
-                             "csv/json/parquet")
-        if output_format != 'csv':
+            raise ValueError(
+                f"Sorry that {output_format} is not supported. "
+                + "This tool currently only support "
+                + "csv/json/parquet"
+            )
+        if output_format != "csv":
             output = convert_csv_to_output_format(output, output_format)
-        logger.info(f"File obfuscation completed successfully.")
+        logger.info("File obfuscation completed successfully.")
         return output
     except KeyError as ke:
         logger.error(f"KeyError occurred: {str(ke)}")
