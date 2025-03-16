@@ -6,6 +6,7 @@ from typing import Literal
 import pandas as pd
 import io
 from src.setup_logger import setup_logger
+import argparse
 
 
 logger = setup_logger(__name__)
@@ -18,7 +19,7 @@ def handle_file_obfuscation(
     chunk_size: int = 5000,
     if_save_to_s3: bool = True,
     auto_detect_pii: bool = False,
-    auto_detect_pii_gpt: bool = False,
+    auto_detect_pii_gpt: bool = False
 ):
     """
     Process the file obfuscation
@@ -93,3 +94,69 @@ def handle_file_obfuscation(
     except Exception as e:
         logger.error(f"Error occurred: {str(e)}")
         raise Exception(str(e))
+
+
+def main():
+
+    parser = argparse.ArgumentParser('File Obfuscation Tool')
+    parser.add_argument(
+            'json_string',
+            type=str,
+            help='A JSON string specifying "file_to_obfuscate"' +
+                 ' and "pii_fields". '
+                 'Example:\'{"file_to_obfuscate": "s3://buc_name/file.csv"' +
+                 ', "pii_fields": ["name", "email"]}\''
+        )
+    parser.add_argument(
+            '--if_output_different_format',
+            action='store_true',
+            help='If set, output format will be different from input format.'
+        )
+    parser.add_argument(
+            "--output_format",
+            type=str,
+            choices=["csv", "json", "parquet"],
+            default=None,
+            help="Output file format. Choose from csv, json, parquet."
+        )
+    parser.add_argument(
+            '--chunk_size',
+            type=int,
+            default=5000,
+            help='Number of rows to process at a time. Default is 5000.'
+        )
+    parser.add_argument(
+            '--if_save_to_s3',
+            action='store_false',
+            help='If set, will not save obfuscated file back to S3.'
+        )
+    parser.add_argument(
+            '--auto_detect_pii',
+            action='store_true',
+            help='Automatically detect PII fields using heuristic model.'
+        )
+    parser.add_argument(
+            '--auto_detect_pii_gpt',
+            action='store_true',
+            help='Automatically detect PII fields using GPT model.'
+        )
+
+    try:
+        args = parser.parse_args()
+
+        handle_file_obfuscation(
+                json_string=args.json_string,
+                if_output_different_format=args.if_output_different_format,
+                output_format=args.output_format,
+                chunk_size=args.chunk_size,
+                if_save_to_s3=args.if_save_to_s3,
+                auto_detect_pii=args.auto_detect_pii,
+                auto_detect_pii_gpt=args.auto_detect_pii_gpt
+            )
+    except Exception as e:
+        logger.error(f"Error occurred: {str(e)}")
+        print(f"Error occurred: {str(e)}")
+
+
+if __name__ == "__main__":
+    main()
