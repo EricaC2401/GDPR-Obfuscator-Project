@@ -1,7 +1,7 @@
 # GDPR Obfuscator
 
 ## Project Overview
-This project provides a pipeline to read files from an AWS S3 bucket, obfuscate specified personally identifiable information (PII) fields, and then write the obfuscated file back to S3. It currently supports CSV, JSON and PARQUET file formats and offers optional automatic PII detection via both heuristic and GPT-based methods.. 
+This project provides a pipeline to read files from an AWS S3 bucket, obfuscate specified personally identifiable information (PII) fields, and then write the obfuscated file back to S3. It currently supports CSV, JSON and PARQUET file formats and offers optional automatic PII detection via both heuristic and GPT-based methods.
 
 ## Features
 - **Read file from s3**: Support CSV, JSON and PARQUET file format.
@@ -16,7 +16,7 @@ This project provides a pipeline to read files from an AWS S3 bucket, obfuscate 
 git clone https://github.com/EricaC2401/GDPR-Obfuscator-Project.git
 cd GDPR-Obfuscator-Project
 ```
-- 2. Create and active a virtrul environment (optional but recommended):
+- 2. Create and active a virtual environment (optional but recommended):
 ``` bash
 python -m venv venv
 source venv/bin/activate # On macOS/ Linux
