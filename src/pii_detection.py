@@ -83,10 +83,10 @@ pii_dict = {
 non_pii_terms = ["course", "product", "item",
                  "company", "department", "category"]
 
-ppi_terms = ["email", "phone", "contact", "name", "address",
+pii_terms = ["email", "phone", "contact", "name", "address",
              "dob", "birth", "passport"]
 
-ppi_patterns = [r"\bni\b",
+pii_patterns = [r"\bni\b",
                 r"(?=.*account)(?=.*number)",
                 r"(?=.*credit)(?=.*card)"]
 
@@ -96,19 +96,19 @@ def is_pii_by_heuristic(column_name: str) -> bool:
     Check if a column name is PII based on predefined partterns and exclusion
 
     Args:
-        column_name (str): The column_name want to detect if ppi
+        column_name (str): The column_name want to detect if pii
 
     Returns:
         bool: True if detected is pii, False otherwise
     """
     logger.debug(f"Checking if column '{column_name}' " +
                  "is PII using heuristic method.")
-    if any(term in column_name.lower() for term in ppi_terms):
+    if any(term in column_name.lower() for term in pii_terms):
         if any(term in column_name.lower() for term in non_pii_terms):
             return False
         return True
     else:
-        for pattern in ppi_patterns:
+        for pattern in pii_patterns:
             if re.search(pattern, column_name, re.IGNORECASE):
                 logger.debug(f"Column '{column_name}' " +
                              "matches pattern: {pattern}.")
@@ -123,7 +123,7 @@ def detect_if_pii(column_name: str) -> bool:
     First check the dictionary, then apply heuristic if unknown
 
     Args:
-        column_name (str): The column_name want to detect if ppi
+        column_name (str): The column_name want to detect if pii
 
     Returns:
         bool: True if detected is pii, False otherwise
