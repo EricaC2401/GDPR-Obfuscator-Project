@@ -126,7 +126,7 @@ def detect_if_pii(column_name: str) -> bool:
         column_name (str): The column_name want to detect if pii
 
     Returns:
-        bool: True if detected is pii, False otherwise
+        bool: True if detected as pii, False otherwise
     """
     logger.debug(f"Detecting if column '{column_name}' is PII.")
     if " " in column_name:

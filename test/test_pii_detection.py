@@ -4,7 +4,7 @@ from src.pii_detection import is_pii_by_heuristic, detect_if_pii
 
 class TestIsPIIByHeruistic:
     @pytest.mark.it('Test if return True for ' +
-                    'cols with PII terms and not in non-pii terms')
+                    'cols with pii terms and not in non-pii terms')
     def test_pii_terms_not_in_nonpii(self):
         assert is_pii_by_heuristic("email") is True
         assert is_pii_by_heuristic("email_address") is True
@@ -14,7 +14,7 @@ class TestIsPIIByHeruistic:
         assert is_pii_by_heuristic("course") is False
         assert is_pii_by_heuristic("course_name") is False
 
-    @pytest.mark.it("Test if col matching PPI patterns")
+    @pytest.mark.it("Test if col matching pii patterns")
     def test_pii_pattern(self):
         assert is_pii_by_heuristic("ni") is True
         assert is_pii_by_heuristic("nino") is False
