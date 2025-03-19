@@ -1,7 +1,7 @@
 # GDPR Obfuscator
 
 ## Project Overview
-This project provides a pipeline to read files from an AWS S3 bucket, obfuscate specified personally identifiable information (PII) fields, and then write the obfuscated file back to S3. It currently supports CSV, JSON and PARQUET file formats and offers optional automatic PII detection via both heuristic and GPT-based methods.
+This project provides a pipeline to read files from an AWS S3 bucket, obfuscate specified personally identifiable information (PII) fields, and then write the obfuscated file back to S3 or return it as a byte-stream object. It currently supports CSV, JSON and PARQUET file formats, and with optional automatic PII detection using heuristic or GPT-based methods.
 
 ## Features
 - **Read file from s3**: Support CSV, JSON and PARQUET file format.
@@ -42,12 +42,12 @@ This function processes the file obfuscation and provides options for different 
 **Parameters**:
 
 - json_string (str): JSON string containing “file_to_obfuscate” and “pii_fields”.
-- if_output_different_format (bool): If True, outputs in a different format (CSV, JSON, Parquet).
+- if_output_different_format (bool): If True, outputs in a different format (CSV, JSON, Parquet) from the input.
 - output_format (str): If if_output_different_format is True, specify the output format, use if if_output_different_format is True.
 - chunk_size (int): Number of rows to process at a time (default is 5000).
 - if_save_to_s3 (bool): If True, saves the obfuscated file to S3 (default is True).
-- auto_detect_pii (bool): If True, automatically detects PII fields using a heuristic model.
-- auto_detect_pii_gpt (bool): If True, detects PII fields using GPT-based detection.
+- auto_detect_pii (bool): If True, automatically detect PII fields in the dataset.
+- auto_detect_pii_gpt (bool): If True, detects PII fields using GPT-based detection. Otherwise, detects PII fields using a heuristic model.
 
 
 ## Usage
@@ -102,13 +102,13 @@ This command will execute the tool with the following default options:
 | `--if_output_different_format`   | Flag   | If set, allows output format to be different from input format.                                               | Disabled                         |
 | `--output_format`                | String | Specifies output format. Options: `"csv"`, `"json"`, `"parquet"`.                                             | Same as input format             |
 | `--chunk_size`                   | Int    | Number of rows processed at a time.                                                                          | 5000                             |
-| `--if_save_to_s3`                | Flag   | If set, disables saving the obfuscated file back to S3.                                                       | Saves to S3                      |
+| `--if_not_save_to_s3`                | Flag   | If set, disables saving the obfuscated file back to S3.                                                      | Saves to S3                      |
 | `--auto_detect_pii`              | Flag   | Enables automatic PII detection using a heuristic model.                                                      | Disabled                         |
 | `--auto_detect_pii_gpt`          | Flag   | Enables automatic PII detection using the GPT model (requires OpenAI API key).                                | Disabled                         |
 
 Example Usage with Options:
 ```bash
-python src/main.py '{"file_to_obfuscate": "s3://bucket_name/file.csv", "pii_fields": ["name", "email"]}' --if_output_different_format --output_format parquet --chunk_size 1000 --auto_detect_pii --auto_detect_pii_gpt
+python src/main.py '{"file_to_obfuscate": "s3://bucket_name/file.csv", "pii_fields": []}' --if_output_different_format --output_format parquet --chunk_size 1000 --auto_detect_pii --auto_detect_pii_gpt
 ```
 
 This command will convert the output file to Parquet format, process 1000 rows at a time, and use GPT-based PII detection to automatically identify PII fields. The processed file will be saved back to the specified S3 bucket.

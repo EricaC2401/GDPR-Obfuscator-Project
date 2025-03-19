@@ -126,7 +126,7 @@ def main():
             help='Number of rows to process at a time. Default is 5000.'
         )
     parser.add_argument(
-            '--if_save_to_s3',
+            '--if_not_save_to_s3',
             action='store_false',
             help='If set, will not save obfuscated file back to S3.'
         )
@@ -149,7 +149,7 @@ def main():
                 if_output_different_format=args.if_output_different_format,
                 output_format=args.output_format,
                 chunk_size=args.chunk_size,
-                if_save_to_s3=args.if_save_to_s3,
+                if_save_to_s3=args.if_not_save_to_s3,
                 auto_detect_pii=args.auto_detect_pii,
                 auto_detect_pii_gpt=args.auto_detect_pii_gpt
             )

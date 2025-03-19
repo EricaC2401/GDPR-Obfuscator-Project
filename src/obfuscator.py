@@ -295,7 +295,7 @@ def convert_csv_to_output_format(
         output_format (str): Desired output format ('json' or 'parquet')
 
     Returns:
-        io.BytesIO: Converted file in json or parquet
+        io.BytesIO: Converted file in json or parquet in a byte system
     """
     logger.info(f"Converting CSV to {output_format} format.")
     csv_bytes.seek(0)
@@ -330,7 +330,7 @@ def obfuscate_file(
     Args:
         file_content (str): raw data as a string
         fields_list (list): fields to be obfuscated
-        file_type (str): file type (e.g. csv) in the output byte system
+        file_type (str): file type (e.g. csv) in the input
         output_format (str): Desired ourput format (csv/json/parquet)
                              ,same as file_type by default
         chunk_size (int): number of rows to process at a time, 5000 by default
@@ -347,8 +347,8 @@ def obfuscate_file(
                 with '***'.
 
     Returns:
-        io.BytesIO: Obfuscated file (as specified in file_type,
-        csv by default) in a byte system
+        io.BytesIO: Obfuscated file (file type as specified in output_format,
+                                     or csv by default, in a byte system)
     """
     logger.info(
         f"Obfuscating file of type {file_type}"
